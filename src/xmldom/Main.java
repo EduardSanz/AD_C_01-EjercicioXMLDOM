@@ -1,9 +1,9 @@
 package xmldom;
 
-import org.w3c.dom.Attr;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+import org.w3c.dom.*;
+import org.xml.sax.SAXException;
 import xmldom.modelos.Alumno;
+import xmldom.modelos.Tags;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -12,6 +12,7 @@ import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -21,28 +22,69 @@ public class Main {
     public static void main(String[] args) {
         ArrayList<Alumno> alumnosList = new ArrayList<>();
         Scanner scanner = new Scanner(System.in);
-        int opcion = menu(scanner);
+        int opcion;
+        do{
+            opcion = menu(scanner);
+            switch (opcion) {
+                case 1:
+                    crearAlumno(alumnosList, scanner);
+                    break;
+                case 2:
+                    try {
+                        guardarAlumnos(alumnosList, scanner);
+                    } catch (ParserConfigurationException e) {
+                        throw new RuntimeException(e);
+                    } catch (TransformerException e) {
+                        throw new RuntimeException(e);
+                    }
+                    break;
+                case 3:
+                    try {
+                        cargarAlumnos(alumnosList, scanner);
+                    } catch (ParserConfigurationException e) {
+                        throw new RuntimeException(e);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    } catch (SAXException e) {
+                        System.out.println("EL FICHERO ES INCOMPATIBLE");
+                        ;
+                    }
+                    break;
+                case 4:
+                    System.out.println("Bye Bye baby");
+            }
+        }while (opcion != 4);
 
-        switch (opcion) {
-            case 1:
-                crearAlumno(alumnosList, scanner);
-                break;
-            case 2:
-                try {
-                    guardarAlumnos(alumnosList, scanner);
-                } catch (ParserConfigurationException e) {
-                    throw new RuntimeException(e);
-                } catch (TransformerException e) {
-                    throw new RuntimeException(e);
-                }
-                break;
-            case 3:
-                alumnosList = cargarAlumnos();
-                break;
-            case 4:
-                System.out.println("Bye Bye baby");
+    }
+
+    private static void cargarAlumnos(ArrayList<Alumno> alumnosList, Scanner scanner) throws ParserConfigurationException, IOException, SAXException {
+
+        System.out.println("Dime el nombre del fichero");
+        String fileName = scanner.nextLine();
+        File fichero = new File(fileName);
+
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        DocumentBuilder db = dbf.newDocumentBuilder();
+
+        Document doc = db.parse(fichero);
+        doc.getDocumentElement().normalize();
+
+        alumnosList.clear();
+
+        NodeList alumnosNodos = doc.getElementsByTagName(Tags.ALUMNO);
+        for (int i = 0; i < alumnosNodos.getLength(); i++) {
+            Node alumno = alumnosNodos.item(i);
+            if (alumno.getNodeType() == Node.ELEMENT_NODE){
+                Element alumnoElement = (Element) alumno;
+                String id = alumnoElement.getAttribute(Tags.ID);
+                String nombre = alumnoElement.getElementsByTagName(Tags.NOMBRE).item(0).getTextContent();
+                String apellidos = alumnoElement.getElementsByTagName(Tags.APELLIDOS).item(0).getTextContent();
+                int asignaturas = Integer.parseInt(alumnoElement.getElementsByTagName(Tags.ASIGNATURAS).item(0).getTextContent());
+                alumnosList.add(new Alumno(id, nombre, apellidos, asignaturas));
+            }
         }
 
+        System.out.printf("Hemos cargado %d alumnos%n", alumnosNodos.getLength());
     }
 
     private static void guardarAlumnos(ArrayList<Alumno> alumnosList, Scanner scanner) throws ParserConfigurationException, TransformerException {
@@ -58,22 +100,22 @@ public class Main {
         doc.appendChild(raiz);
 
         for (Alumno kk : alumnosList) {
-            Element alumno = doc.createElement("alumno");
+            Element alumno = doc.createElement(Tags.ALUMNO);
             raiz.appendChild(alumno);
 
-            Attr attrId = doc.createAttribute("id_estudiante");
+            Attr attrId = doc.createAttribute(Tags.ID);
             attrId.setValue(kk.getId());
             alumno.setAttributeNode(attrId);
 
-            Element nombre = doc.createElement("nombre");
+            Element nombre = doc.createElement(Tags.NOMBRE);
             nombre.setTextContent(kk.getNombre());
             alumno.appendChild(nombre);
 
-            Element apellidos = doc.createElement("apellidos");
+            Element apellidos = doc.createElement(Tags.APELLIDOS);
             apellidos.setTextContent(kk.getApellido());
             alumno.appendChild(apellidos);
 
-            Element asignaturas = doc.createElement("asignaturas_matriculadas");
+            Element asignaturas = doc.createElement(Tags.ASIGNATURAS);
             asignaturas.setTextContent(String.valueOf(kk.getAsignaturas()));
             alumno.appendChild(asignaturas);
         }
