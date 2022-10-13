@@ -2,12 +2,11 @@ package xmldom;
 
 import org.w3c.dom.*;
 import org.xml.sax.SAXException;
+import xmldom.manejadores.AlumnosSAXHandler;
 import xmldom.modelos.Alumno;
 import xmldom.modelos.Tags;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.*;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
@@ -51,10 +50,38 @@ public class Main {
                     }
                     break;
                 case 4:
-                    System.out.println("Bye Bye baby");
+                    try {
+                        cargaAlumnosSAX(alumnosList, scanner);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    } catch (SAXException e) {
+                        System.out.println("ERROR DE SAX");
+                        System.out.println(e.getLocalizedMessage());
+                    } catch (ParserConfigurationException e) {
+                        System.out.println("ERRO EN EL PARSER");
+                        System.out.println(e.getLocalizedMessage());
+                    }
+                    break;
+                case 5:
+                    System.out.println("Bye Bye");
             }
-        }while (opcion != 4);
+        }while (opcion != 5);
 
+    }
+
+    private static void cargaAlumnosSAX(ArrayList<Alumno> alumnosList, Scanner scanner) throws IOException, SAXException, ParserConfigurationException {
+        System.out.println("Dime el nombre del fichero");
+        String fileName = scanner.nextLine();
+        File fichero = new File(fileName);
+
+        SAXParserFactory saxPF = SAXParserFactory.newInstance();
+        SAXParser saxP = saxPF.newSAXParser();
+        AlumnosSAXHandler handler = new AlumnosSAXHandler(alumnosList);
+        saxP.parse(fichero, handler);
+
+        for (Alumno alumno : alumnosList) {
+            System.out.println(alumno);
+        }
     }
 
     private static void cargarAlumnos(ArrayList<Alumno> alumnosList, Scanner scanner) throws ParserConfigurationException, IOException, SAXException {
@@ -150,10 +177,11 @@ public class Main {
             System.out.println("1. Introducir Alumno");
             System.out.println("2. Guardar Alumnos");
             System.out.println("3. Cargar Alumnos");
-            System.out.println("4. salir");
+            System.out.println("4. Cargar alumnos SAX");
+            System.out.println("5. Salir");
             opcion = scanner.nextInt();
             scanner.nextLine();
-        }while (opcion < 1 || opcion > 4);
+        }while (opcion < 1 || opcion > 5);
         return opcion;
     }
 }

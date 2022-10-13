@@ -13,6 +13,10 @@ public class Alumno {
         this.asignaturas = asignaturas;
     }
 
+    public Alumno() {
+
+    }
+
     public String getId() {
         return id;
     }
